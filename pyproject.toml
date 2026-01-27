@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "google_cloud_utils"
+version = "0.1.0"
+description = "A wrapper for Google Cloud services handlers"
+readme = "README.md"
+authors = [
+    { name = "DataGem Consulting", email = "contact@datagem.tech" }
+]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "google-cloud-bigquery",
+    "google-cloud-storage",
+    "google-cloud-secret-manager",
+    "google-cloud-tasks",
+    "google-cloud-scheduler",
+    "google-cloud-datastore",
+    "google-cloud-firestore",
+    "google-cloud-pubsub",
+    "pandas",
+    "python-dotenv",
+    "genson",
+    "openpyxl",
+    "regex",
+    "numpy"
+]
+
+[project.urls]
+Homepage = "https://github.com/hayvo/google-cloud-utils"
+
+[tool.setuptools.packages.find]
+include = ["google_cloud_utils*"]
