@@ -5,6 +5,7 @@ from .handlers.secret_manager.handler import SecretManagerHandler
 from .handlers.cloud_scheduler.handler import CloudSchedulerHandler
 from .handlers.datastore.handler import DatastoreHandler
 from .handlers.pubsub.handler import PubSubHandler
+from .handlers import CloudFunctionHandler
 import threading
 
 class GoogleCloudHandler:
@@ -85,7 +86,9 @@ class GoogleCloudHandler:
             
             cloudTasksServiceAccountJson = cloudTasksServiceAccountJson or self.secretManagerHandler.get_secret("cloud-tasks-admin-service-account")
             self.cloudTasksHandler = CloudTasksHandler(serviceAccountJson=cloudTasksServiceAccountJson)
-            
+
+            cloudFunctionsServiceAccountJson = cloudFunctionsServiceAccountJson or self.secretManagerHandler.get_secret("cloud-function-admin-service-account")
+            self.cloudFunctionHandler = CloudFunctionHandler(serviceAccountJson=cloudFunctionsServiceAccountJson)
         except Exception as e:
             print(f"Error initializing Google Cloud Handler: {e}")
             raise e

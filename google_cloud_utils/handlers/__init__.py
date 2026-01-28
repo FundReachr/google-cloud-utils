@@ -7,6 +7,8 @@ from .datastore.handler import DatastoreHandler
 from .firestore.handler import FirestoreHandler
 from .pubsub.handler import PubSubHandler
 from .secret_manager.handler import SecretManagerHandler
+from .cloud_function.handler import CloudFunctionHandler
+
 
 __all__ = [
     "BigQueryHandler",
@@ -18,4 +20,5 @@ __all__ = [
     "FirestoreHandler",
     "PubSubHandler",
     "SecretManagerHandler",
+    "CloudFunctionHandler"
 ]
