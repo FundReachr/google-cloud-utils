@@ -42,7 +42,8 @@ class GoogleCloudHandler:
                     cloudSchedulerServiceAccountJson: dict = None,
                     datastoreServiceAccountJson: dict = None,
                     pubSubServiceAccountJson: dict = None,
-                    cloudTasksServiceAccountJson: dict = None):
+                    cloudTasksServiceAccountJson: dict = None,
+                    cloudFunctionsServiceAccountJson: dict = None):
         """
         Initialize the handlers.
         
@@ -57,6 +58,7 @@ class GoogleCloudHandler:
             datastoreServiceAccountJson (dict, optional): Service account info for Datastore.
             pubSubServiceAccountJson (dict, optional): Service account info for Pub/Sub.
             cloudTasksServiceAccountJson (dict, optional): Service account info for Cloud Tasks.
+            cloudFunctionsServiceAccountJson (dict, optional): Service account info for Cloud Functions.
         
         Raises:
             Exception: If initialization of any handler fails.
