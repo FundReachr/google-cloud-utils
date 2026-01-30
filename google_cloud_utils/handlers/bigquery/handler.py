@@ -29,53 +29,44 @@ class BigQueryHandler:
                     cls._instance._initialize(*args, **kwargs)  
         return cls._instance
 
-    def _initialize(self, serviceAccountJson : dict = None, client: bigquery.Client = None):
-        """
-        Initialize the BigQueryHandler.
-
-        Args:
-            serviceAccountJson (dict, optional): Service account credentials as a dictionary.
-            client (bigquery.Client, optional): An existing BigQuery client.
-        
-        Raises:
-            Exception: If credential initialization fails.
-        """
-        print("Initializing BigQuery Handler...")
-        if hasattr(self, "client"):  # Prevent multiple initializations
+    def _initialize(self, serviceAccountJson: dict = None, client: bigquery.Client = None):
+        if getattr(self, "_initialized", False):
             return
+
+        print("Initializing BigQuery Handler...")
 
         try:
             if client:
-                print("Using provided client")
                 self.client = client
+
             elif serviceAccountJson:
-                print("Using provided service account JSON")
                 self.client = bigquery.Client.from_service_account_info(serviceAccountJson)
-                self.Loader = BigQueryLoader(client=self.client)
+
             else:
-                traceback.print_exc()
-                try:
-                    load_dotenv()
-                    print("Using service account JSON from environment variable")
-                    credentials = json.loads(os.getenv("BIGQUERY_SERVICE_ACCOUNT_JSON"))
+                load_dotenv()
+                sa_json = os.getenv("BIGQUERY_SERVICE_ACCOUNT_JSON")
+
+                if sa_json:
+                    credentials = json.loads(sa_json)
                     self.client = bigquery.Client.from_service_account_info(credentials)
-                    self.Loader = BigQueryLoader(client=self.client)
-                except Exception:
-                    try:
-                        if os.path.exists('var/bigquery_service_account.json'):
-                            print("Using service account JSON from file")
-                            self.client = bigquery.Client.from_service_account_json('var/bigquery_service_account.json')
-                            self.Loader = BigQueryLoader(client=self.client)
-                    except Exception:
-                        print("Using default credentials")
-                        traceback.print_exc()
-                        credentials = compute_engine.Credentials()
-                        self.client = bigquery.Client(credentials=credentials)
-                        self.Loader = BigQueryLoader(client=self.client)
+                elif os.path.exists("var/bigquery_service_account.json"):
+                    self.client = bigquery.Client.from_service_account_json(
+                        "var/bigquery_service_account.json"
+                    )
+                else:
+                    credentials = compute_engine.Credentials()
+                    self.client = bigquery.Client(credentials=credentials)
+
+            # ✅ Only reached if client creation succeeded
+            self.Loader = BigQueryLoader(client=self.client)
             self.project_id = self.client.project
+            self._initialized = True
+
         except Exception as e:
-            traceback.print_exc()
-            raise Exception(f"Error initializing GCP credentials: {e}")
+            # 🔥 Make sure we don't leave a poisoned singleton
+            if hasattr(self, "client"):
+                del self.client
+            raise RuntimeError(f"Error initializing GCP credentials") from e
         
     def formatParams(self, params : list[dict]) -> list[dict]:
         """Format parameters for query execution.
