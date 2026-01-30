@@ -144,3 +144,28 @@ class CloudTasksHandler:
             print(f"Error listing tasks: {e}")
             traceback.print_exc()
             raise
+
+    def create_task_unique(self,queue_name: str, location: str, url: str, payload: dict = None, service_account_email: str = None, delay_seconds: int = None):
+        # List existing tasks
+        existing_tasks = self.list_tasks(queue_name, location)
+
+        new_event_type = payload.get("event_type")
+        new_type = payload.get("type")
+        # Check for duplicate
+        for task in existing_tasks:
+            event_type = task.payload.get("event_type")
+            task_type = task.payload.get("type")
+
+            if event_type == new_event_type and task_type == new_type:
+                print(f"Duplicate task found for event_type={event_type} and type={task_type}. Skipping creation.")
+                return
+            
+         # No duplicate found, create the task
+        self.create_task(
+            queue_name=queue_name,
+            location=location,
+            url=url,
+            payload=payload,
+            service_account_email=service_account_email,
+            delay_seconds=delay_seconds
+        )
