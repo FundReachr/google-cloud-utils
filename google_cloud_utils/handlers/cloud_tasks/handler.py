@@ -101,7 +101,8 @@ class CloudTasksHandler:
         payload: dict = None,
         delay_seconds: int = None,
         service_account_email: str = None,
-        http_method=tasks_v2.HttpMethod.POST
+        http_method=tasks_v2.HttpMethod.POST,
+        http_headers: dict = {"Content-Type": "application/json"},
     ):
         parent = self.queue_path(queue_name, location)
 
@@ -109,7 +110,7 @@ class CloudTasksHandler:
             "http_request": {
                 "http_method": http_method,
                 "url": url,
-                "headers": {"Content-Type": "application/json"},
+                "headers": http_headers,
             }
         }
 
@@ -145,7 +146,7 @@ class CloudTasksHandler:
             traceback.print_exc()
             raise
 
-    def create_task_unique(self,queue_name: str, location: str, url: str, payload: dict = None, service_account_email: str = None, delay_seconds: int = None):
+    def create_task_unique(self,queue_name: str, location: str, url: str, payload: dict = None, service_account_email: str = None, delay_seconds: int = None, http_method=tasks_v2.HttpMethod.POST, http_headers: dict = {"Content-Type": "application/json"}):
         # List existing tasks
         existing_tasks = self.list_tasks(queue_name, location)
 
@@ -167,5 +168,8 @@ class CloudTasksHandler:
             url=url,
             payload=payload,
             service_account_email=service_account_email,
-            delay_seconds=delay_seconds
+            delay_seconds=delay_seconds,
+            http_method=http_method,
+            http_headers=http_headers
+        
         )

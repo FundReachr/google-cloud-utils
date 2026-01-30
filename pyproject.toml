@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "google_cloud_utils"
-version = "0.1.3.3"
+version = "0.1.3.4"
 description = "A wrapper for Google Cloud services handlers"
 readme = "README.md"
 authors = [
