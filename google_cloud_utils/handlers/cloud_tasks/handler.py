@@ -154,8 +154,8 @@ class CloudTasksHandler:
         new_type = payload.get("type")
         # Check for duplicate
         for task in existing_tasks:
-            event_type = task.payload.get("event_type")
-            task_type = task.payload.get("type")
+            event_type = task.http_request.body.decode().get("event_type")
+            task_type = task.http_request.body.decode().get("type")
 
             if event_type == new_event_type and task_type == new_type:
                 print(f"Duplicate task found for event_type={event_type} and type={task_type}. Skipping creation.")
