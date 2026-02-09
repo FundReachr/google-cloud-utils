@@ -427,3 +427,20 @@ class CloudStorageHandler:
             print(f"Error retrieving file: {e}")
             traceback.print_exc()
             raise Exception("Failed to retrieve file from GCS.")
+        
+    def move_file(self,source_bucket_name: str, source_file_name: str, destination_bucket_name: str, destination_file_name: str) -> None:
+        """
+        Move a file from one bucket to another.
+        """
+        try:
+            client = self.storage_client
+            source_bucket = client.get_bucket(source_bucket_name)
+            destination_bucket = client.get_bucket(destination_bucket_name)
+            blob = source_bucket.blob(source_file_name)
+            source_bucket.copy_blob(blob, destination_bucket, destination_file_name)
+            blob.delete()   
+            print(f"File {source_file_name} moved from bucket {source_bucket_name} to bucket {destination_bucket_name}.")
+        except Exception as e:
+            print(f"Error moving file: {e}")
+            traceback.print_exc()
+            raise Exception("Failed to move file in GCS.")
