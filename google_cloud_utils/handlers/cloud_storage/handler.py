@@ -259,6 +259,25 @@ class CloudStorageHandler:
             print(f"Error creating bucket: {e}")
             traceback.print_exc()
             raise Exception("Failed to create bucket in GCS.")
+        
+    def bucket_exists(self, bucket_name: str) -> bool:
+        """
+        Check if a GCS bucket exists.
+
+        Args:
+            bucket_name: The name of the bucket to check.
+
+        Returns:
+            bool: True if the bucket exists, False otherwise.
+        """
+        try:
+            client = self.storage_client
+            bucket = client.bucket(bucket_name)
+            return bucket.exists()
+        except Exception as e:
+            print(f"Error checking bucket existence: {e}")
+            traceback.print_exc()
+            return False
 
     def check_folder_exists(self, folder_name: str, bucket: str, parent_folder: str = "") -> bool:
         """
