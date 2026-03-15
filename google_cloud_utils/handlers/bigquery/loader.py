@@ -265,12 +265,26 @@ class BigQueryLoader:
                     return json.dumps(value) if isinstance(value, (dict)) else str(value)
             return value
 
+        def _default_for_field(field):
+            """Return a safe non-null default for a REQUIRED BQ field."""
+            ft = field.field_type.upper()
+            if ft in ("STRING", "BYTES"):
+                return ""
+            if ft in ("INTEGER", "INT64", "FLOAT", "FLOAT64", "NUMERIC", "BIGNUMERIC"):
+                return 0
+            if ft in ("BOOLEAN", "BOOL"):
+                return False
+            if ft in ("RECORD", "STRUCT"):
+                return {}
+            return ""  # fallback
+
         def process_record(record, schema_fields):
             processed_record = {}
             for field in schema_fields:
                 field_name = field.name
                 field_type = field.field_type  # Example: STRING, INTEGER, etc.
-            
+                mode = (field.mode or "NULLABLE").upper()
+
                 if field_name in record:
                     value = record[field_name]
                     if value is not None:  # Only process non-null values
@@ -286,11 +300,21 @@ class BigQueryLoader:
                             # Convert or validate the value
                             processed_record[field_name] = convert_value(value, field)
                     else:
-                        # Preserve null values
-                        processed_record[field_name] = None
+                        # Null value: use default for REQUIRED fields, [] for REPEATED, else None
+                        if mode == "REQUIRED":
+                            processed_record[field_name] = _default_for_field(field)
+                        elif mode == "REPEATED":
+                            processed_record[field_name] = []
+                        else:
+                            processed_record[field_name] = None
                 else:
-                    # If the field is not present, set it to None
-                    processed_record[field_name] = None
+                    # Field missing from record: same null-handling logic
+                    if mode == "REQUIRED":
+                        processed_record[field_name] = _default_for_field(field)
+                    elif mode == "REPEATED":
+                        processed_record[field_name] = []
+                    else:
+                        processed_record[field_name] = None
             return processed_record
 
         # Process each record in the data
