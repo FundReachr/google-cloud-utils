@@ -54,6 +54,7 @@ class CloudTasksHandler:
                     scopes=["https://www.googleapis.com/auth/cloud-platform"],
                 )
                 self.project_id = serviceAccountJson["project_id"]
+                self.credentials = credentials
 
             else:
                 try:
@@ -64,11 +65,13 @@ class CloudTasksHandler:
                         scopes=["https://www.googleapis.com/auth/cloud-platform"],
                     )
                     self.project_id = serviceAccountJson["project_id"]
+                    self.credentials = credentials
 
                 except Exception:
                     print("Using default credentials for Cloud Tasks")
                     credentials = compute_engine.Credentials()
                     self.project_id = os.getenv("GCP_PROJECT")
+                    self.credentials = credentials
 
             # --------------------
             # Client
@@ -127,6 +130,10 @@ class CloudTasksHandler:
             task["http_request"]["oidc_token"] = {
                 "service_account_email": service_account_email
             }
+        else:
+            task["http_request"]["oidc_token"] = {
+                "service_account_email": self.credentials.service_account_email
+            }
 
         try:
             response = self.client.create_task(parent=parent, task=task)
@@ -157,11 +164,9 @@ class CloudTasksHandler:
             encoded_payload = task.http_request.body.decode()
             if encoded_payload:
                 body = json.loads(encoded_payload)
-                event_type = body.get("event_type")
-                task_type = body.get("type")
-
-                if event_type == new_event_type and task_type == new_type:
-                    print(f"Duplicate task found for event_type={event_type} and type={task_type}. Skipping creation.")
+                
+                if body == payload:
+                    print(f"Duplicate task found for payload={payload}. Skipping creation.")
                     return
             
          # No duplicate found, create the task
@@ -170,7 +175,7 @@ class CloudTasksHandler:
             location=location,
             url=url,
             payload=payload,
-            service_account_email=service_account_email,
+            service_account_email=service_account_email  or self.credentials.service_account_email,
             delay_seconds=delay_seconds,
             http_method=http_method,
             http_headers=http_headers

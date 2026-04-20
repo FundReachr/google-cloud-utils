@@ -1,11 +1,4 @@
-from .handlers.bigquery.handler import BigQueryHandler
-from .handlers.cloud_storage.handler import CloudStorageHandler
-from .handlers.cloud_tasks.handler import CloudTasksHandler
-from .handlers.secret_manager.handler import SecretManagerHandler
-from .handlers.cloud_scheduler.handler import CloudSchedulerHandler
-from .handlers.datastore.handler import DatastoreHandler
-from .handlers.pubsub.handler import PubSubHandler
-from .handlers import CloudFunctionHandler
+from .handlers import *
 import threading
 
 class GoogleCloudHandler:
@@ -35,15 +28,7 @@ class GoogleCloudHandler:
                     cls._instance._initialize(*args, **kwargs)  
         return cls._instance
     
-    def _initialize(self, 
-                    secretManagerServiceAccount: dict = None, 
-                    bigQueryServiceAccountJson: dict = None, 
-                    cloudStorageServiceAccountJson: dict = None, 
-                    cloudSchedulerServiceAccountJson: dict = None,
-                    datastoreServiceAccountJson: dict = None,
-                    pubSubServiceAccountJson: dict = None,
-                    cloudTasksServiceAccountJson: dict = None,
-                    cloudFunctionsServiceAccountJson: dict = None):
+    def _initialize(self, **kwargs):
         """
         Initialize the handlers.
         
@@ -68,29 +53,32 @@ class GoogleCloudHandler:
             return
 
         try:
-            self.secretManagerHandler = SecretManagerHandler(serviceAccountJson=secretManagerServiceAccount)
+            self.secretManagerHandler = SecretManagerHandler(serviceAccountJson=kwargs.get("secretManagerServiceAccount"))
             
             # Fetch credentials from Secret Manager if not provided
-            self.cloudStorageServiceAccountJson = cloudStorageServiceAccountJson or self.secretManagerHandler.get_secret("cloud-storage-admin-service-account")
+            self.cloudStorageServiceAccountJson = kwargs.get("cloudStorageServiceAccountJson") or self.secretManagerHandler.get_secret("cloud-storage-admin-service-account")
             self.cloudStorageHandler = CloudStorageHandler(serviceAccountJson=self.cloudStorageServiceAccountJson)
             
-            self.bigQueryServiceAccountJson = bigQueryServiceAccountJson or self.secretManagerHandler.get_secret("bigquery-admin-service-account")
+            self.bigQueryServiceAccountJson = kwargs.get("bigQueryServiceAccountJson") or self.secretManagerHandler.get_secret("bigquery-admin-service-account")
             self.bigQueryHandler = BigQueryHandler(serviceAccountJson=self.bigQueryServiceAccountJson)
             
-            self.cloudSchedulerServiceAccountJson = cloudSchedulerServiceAccountJson or self.secretManagerHandler.get_secret("cloud-scheduler-admin-service-account")
+            self.cloudSchedulerServiceAccountJson = kwargs.get("cloudSchedulerServiceAccountJson") or self.secretManagerHandler.get_secret("cloud-scheduler-admin-service-account")
             self.cloudSchedulerHandler = CloudSchedulerHandler(serviceAccountJson=self.cloudSchedulerServiceAccountJson)
             
-            self.datastoreServiceAccountJson = datastoreServiceAccountJson or self.secretManagerHandler.get_secret("firestore-admin-service-account")
+            self.datastoreServiceAccountJson = kwargs.get("datastoreServiceAccountJson") or self.secretManagerHandler.get_secret("firestore-admin-service-account")
             self.datastoreHandler = DatastoreHandler(serviceAccountJson=self.datastoreServiceAccountJson) 
             
-            self.pubSubServiceAccountJson = pubSubServiceAccountJson or self.secretManagerHandler.get_secret("pubsub-admin-service-account")
+            self.pubSubServiceAccountJson = kwargs.get("pubSubServiceAccountJson") or self.secretManagerHandler.get_secret("pubsub-admin-service-account")
             self.pubSubHandler = PubSubHandler(serviceAccountJson=self.pubSubServiceAccountJson)
             
-            self.cloudTasksServiceAccountJson = cloudTasksServiceAccountJson or self.secretManagerHandler.get_secret("cloud-tasks-admin-service-account")
+            self.cloudTasksServiceAccountJson = kwargs.get("cloudTasksServiceAccountJson") or self.secretManagerHandler.get_secret("cloud-tasks-admin-service-account")
             self.cloudTasksHandler = CloudTasksHandler(serviceAccountJson=self.cloudTasksServiceAccountJson)
 
-            self.cloudFunctionsServiceAccountJson = cloudFunctionsServiceAccountJson or self.secretManagerHandler.get_secret("cloud-function-admin-service-account")
+            self.cloudFunctionsServiceAccountJson = kwargs.get("cloudFunctionsServiceAccountJson") or self.secretManagerHandler.get_secret("cloud-function-admin-service-account")
             self.cloudFunctionHandler = CloudFunctionHandler(serviceAccountJson=self.cloudFunctionsServiceAccountJson)
+        
+            self.genaiServiceAccountJson = kwargs.get("genaiServiceAccountJson") or self.secretManagerHandler.get_secret("genai-user-service-account")
+            self.genAIHandler = GenAIHandler(serviceAccountJson=self.genaiServiceAccountJson)
         except Exception as e:
             print(f"Error initializing Google Cloud Handler: {e}")
             raise e
