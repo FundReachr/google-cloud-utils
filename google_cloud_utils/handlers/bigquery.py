@@ -12,6 +12,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from google.auth import compute_engine
 from google.cloud import bigquery
+from .bigquery_loader import BigQueryLoader
 
 load_dotenv()
 
@@ -68,6 +69,7 @@ class BigQueryHandler:
                     self.client = bigquery.Client(credentials=credentials)
                     logger.info("Successfully initialized BigQuery client via compute engine default credentials")
 
+            self.Loader = BigQueryLoader(client=self.client)
             self.project_id = self.client.project
             self._initialized = True
             logger.info(f"BigQueryHandler initialized successfully with project_id: {self.project_id}")
