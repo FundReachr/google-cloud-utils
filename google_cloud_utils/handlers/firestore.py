@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import json
-import traceback
-import threading
 import os
-from google.cloud import firestore
+import threading
+from typing import Any
+import traceback
+
 from dotenv import load_dotenv
+from google.cloud import firestore
+
+load_dotenv()
+
 
 class FirestoreHandler:
-    """
-    A singleton handler for Google Cloud Firestore.
-    Provides basic CRUD operations and manages the client lifecycle.
-    """
+    """Singleton handler for Google Cloud Firestore."""
+
     _instance = None
     _lock = threading.Lock()
 
@@ -21,12 +26,11 @@ class FirestoreHandler:
                     cls._instance._initialize(*args, **kwargs)
         return cls._instance
 
-    def _initialize(self, serviceAccountJson: dict = None, client: firestore.Client = None):
-        """
-        Initialize the Firestore client.
-        :param serviceAccountJson: Dictionary containing service account credentials.
-        :param client: Optional existing firestore.Client instance.
-        """
+    def _initialize(
+        self,
+        serviceAccountJson: dict | None = None,
+        client: firestore.Client | None = None,
+    ):
         if hasattr(self, "client"):
             return
 
@@ -37,7 +41,6 @@ class FirestoreHandler:
             elif serviceAccountJson:
                 self.client = firestore.Client.from_service_account_info(serviceAccountJson)
             else:
-                # Load from environment or use default credentials
                 load_dotenv()
                 env_creds = os.getenv("FIRESTORE_SERVICE_ACCOUNT_JSON")
                 if env_creds:
@@ -48,31 +51,27 @@ class FirestoreHandler:
         except Exception as e:
             print(f"Failed to initialize Firestore: {e}")
             traceback.print_exc()
-            # Fallback to default credentials if possible
             self.client = firestore.Client()
 
     def get_document(self, collection: str, document_id: str):
-        """Retrieve data from a specific document."""
         try:
-            doc_ref = self.client.collection(collection).document(str(document_id))
-            doc = doc_ref.get()
-            return doc.to_dict() if doc.exists else None
+            doc = self.client.collection(collection).document(str(document_id)).get()
+            return doc.to_dict() if doc.exists else None  # type: ignore
         except Exception as e:
             print(f"Firestore Error (get): {e}")
             return None
 
-    def set_document(self, collection: str, document_id: str, data: dict, merge: bool = True):
-        """Write or update data to a specific document."""
+    def set_document(
+        self, collection: str, document_id: str, data: dict, merge: bool = True
+    ):
         try:
-            doc_ref = self.client.collection(collection).document(str(document_id))
-            doc_ref.set(data, merge=merge)
+            self.client.collection(collection).document(str(document_id)).set(data, merge=merge)
             return True
         except Exception as e:
             print(f"Firestore Error (set): {e}")
             return False
 
     def delete_document(self, collection: str, document_id: str):
-        """Delete a document."""
         try:
             self.client.collection(collection).document(str(document_id)).delete()
             return True
@@ -80,11 +79,12 @@ class FirestoreHandler:
             print(f"Firestore Error (delete): {e}")
             return False
 
-    def query_collection(self, collection: str, filters: list = None, limit: int = None):
-        """
-        Query a collection with filters.
-        :param filters: List of tuples (field, operator, value) e.g., [('status', '==', 'active')]
-        """
+    def query_collection(
+        self,
+        collection: str,
+        filters: list[tuple[str, str, Any]] | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any] | None]:
         try:
             query = self.client.collection(collection)
             if filters:
@@ -92,9 +92,10 @@ class FirestoreHandler:
                     query = query.where(field, op, val)
             if limit:
                 query = query.limit(limit)
-            
-            docs = query.stream()
-            return [doc.to_dict() for doc in docs]
+            return [doc.to_dict() for doc in query.stream()]
         except Exception as e:
             print(f"Firestore Error (query): {e}")
             return []
+
+    def upsert_document(self, collection: str, document_id: str, data: dict):
+        return self.set_document(collection, document_id, data, merge=True)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import threading
@@ -6,8 +8,6 @@ from typing import Any, Dict, Optional
 
 import google.auth
 from dotenv import load_dotenv
-from google.auth import compute_engine
-from google.auth.transport.requests import Request
 from google.oauth2 import service_account
 
 load_dotenv()
@@ -18,10 +18,9 @@ _VERTEX_AI_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 class GenAIHandler:
     """Singleton handler for Google GenAI / Vertex AI credentials.
 
-    Holds a dedicated service-account for Vertex AI calls, separate from the
-    Cloud Storage service-account.  Exposes:
-      - ``genai_credentials`` — scoped SA credentials ready for ``genai.Client``
-      - ``get_client(project, location)`` — factory that builds a ``google.genai.Client``
+    Exposes:
+    - ``genai_credentials`` — scoped SA credentials ready for ``genai.Client``
+    - ``get_client(project, location)`` — factory that builds a ``google.genai.Client``
     """
 
     _instance = None
@@ -58,23 +57,16 @@ class GenAIHandler:
                         scopes=[_VERTEX_AI_SCOPE],
                     )
                 except Exception:
-                    print("GenAI Handler: falling back to application default credentials (gcloud auth application-default login)")
+                    print("GenAI Handler: falling back to application default credentials")
                     self.genai_credentials, _ = google.auth.default(scopes=[_VERTEX_AI_SCOPE])
         except Exception as e:
             traceback.print_exc()
             raise Exception(f"Error initializing GenAI credentials: {e}")
 
     def get_client(self, project: str, location: str):
-        """Return a ``google.genai.Client`` backed by the service-account credentials.
-
-        Args:
-            project: GCP project ID.
-            location: Vertex AI region (e.g. ``"europe-west1"``).
-
-        Returns:
-            google.genai.Client: Authenticated Vertex AI GenAI client.
-        """
+        """Return a ``google.genai.Client`` backed by the service-account credentials."""
         from google import genai
+
         return genai.Client(
             vertexai=True,
             project=project,
