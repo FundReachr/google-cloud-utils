@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="google_cloud_utils",
-    version="0.2.1",
+    version="0.3.0",
     packages=find_packages(),
     install_requires=[
         "google-cloud-bigquery",
@@ -25,3 +25,4 @@ setup(
     description="A wrapper for Google Cloud services handlers",
     python_requires=">=3.8",
 )
+#

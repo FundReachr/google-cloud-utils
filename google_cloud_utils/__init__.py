@@ -1,4 +1,4 @@
-from .client import GoogleCloudHandler
+from .client import GoogleCloudHandler, GoogleCloudHandlerNonSingleton
 from .handlers import *
 
 __all__ = [
@@ -16,4 +16,5 @@ __all__ = [
     "SheetsHandler",
     "CloudRunJobHandler",
     "GoogleCloudHandler",
+    "GoogleCloudHandlerNonSingleton",
 ]

@@ -46,19 +46,38 @@ PUBSUB_SERVICE_ACCOUNT_JSON='{...}'
 
 ### Initializing the Client
 
-The `GoogleCloudHandler` acts as the main entry point, aggregating all service handlers. It ensures singleton access and thread-safe initialization.
+The `GoogleCloudHandler` acts as the main entry point, aggregating all service handlers with thread-safe, lazy initialization.
+
+The package ships two variants:
+
+- **`GoogleCloudHandler`** (default) — a **singleton**. Every construction returns the same process-wide instance, and the service handlers it builds are the shared process-wide handler singletons, so each handler is initialized at most once.
+- **`GoogleCloudHandlerNonSingleton`** — returns a **fresh, independent instance** on each construction, and builds its own **isolated** service handlers (in non-singleton mode) rather than the shared singletons. Use it when you need multiple clients side by side with different credentials, or want isolation between callers.
+
+Both expose the identical set of handler properties.
 
 ```python
-from google_cloud_utils.client import GoogleCloudHandler
+from google_cloud_utils import GoogleCloudHandler, GoogleCloudHandlerNonSingleton
+# (also importable from google_cloud_utils.client)
 
-# Initialize with default credentials path or env vars
+# Singleton (default): shared across the whole process
 gcp = GoogleCloudHandler()
 
 # Access specific handlers
 bq = gcp.bigQueryHandler
 storage = gcp.cloudStorageHandler
 secrets = gcp.secretManagerHandler
+
+# Non-singleton: a brand new, isolated instance each time —
+# each owns its own handlers with its own credentials.
+gcp_a = GoogleCloudHandlerNonSingleton(bigQueryServiceAccountJson=creds_a)
+gcp_b = GoogleCloudHandlerNonSingleton(bigQueryServiceAccountJson=creds_b)
+assert gcp_a is not gcp_b
+assert gcp_a.bigQueryHandler is not gcp_b.bigQueryHandler  # isolated handlers
 ```
+
+> **Note:** With the singleton, kwargs passed on a later construction are merged into the stored config only for handlers that have **not** been initialized yet; already-live handlers keep their existing instance. Call `GoogleCloudHandler.reset_instance()` to drop the cached singleton (useful in tests).
+>
+> Each service handler (e.g. `BigQueryHandler`) is itself a singleton by default and accepts a `singleton=False` keyword to construct a fresh, isolated instance directly. The non-singleton client passes this through automatically.
 
 ### BigQuery Example
 

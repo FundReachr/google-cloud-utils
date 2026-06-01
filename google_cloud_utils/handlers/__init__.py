@@ -10,7 +10,7 @@ from .cloud_function import CloudFunctionHandler
 from .genai import GenAIHandler
 from .sheets import SheetsHandler
 from .cloud_run import CloudRunJobHandler
-from .client import GoogleCloudHandler
+from .client import GoogleCloudHandler, GoogleCloudHandlerNonSingleton
 
 __all__ = [
     "CloudStorageHandler",
@@ -27,5 +27,6 @@ __all__ = [
     "SheetsHandler",
     "CloudRunJobHandler",
     "GoogleCloudHandler",
+    "GoogleCloudHandlerNonSingleton",
 ]
 

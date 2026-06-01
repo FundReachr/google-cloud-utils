@@ -26,7 +26,13 @@ class CloudStorageHandler:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, singleton: bool = True, **kwargs):
+        if not singleton:
+            # Non-singleton mode: build a fresh, isolated instance that does
+            # not touch (or read from) the process-wide cached instance.
+            instance = super(CloudStorageHandler, cls).__new__(cls)
+            instance._initialize(*args, **kwargs)
+            return instance
         if cls._instance is not None and getattr(cls._instance, "storage_client", None):
             return cls._instance
         with cls._lock:
@@ -98,7 +104,10 @@ class CloudStorageHandler:
             logger.info(f"CloudStorageHandler initialized successfully with project_id: {self.project_id}")
         except Exception as e:
             logger.exception(f"Error initializing CloudStorageHandler: {e}")
-            type(self)._instance = None
+            # Only evict the cached singleton if *this* is it — a failed
+            # non-singleton init must not clobber a healthy shared instance.
+            if type(self)._instance is self:
+                type(self)._instance = None
             raise Exception(f"Error initializing GCP credentials: {e}") from e
 
     # ------------------------------------------------------------------

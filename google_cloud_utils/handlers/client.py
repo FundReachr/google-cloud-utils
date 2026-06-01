@@ -14,26 +14,26 @@ import threading
 import json
 import logging
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
 
-class GoogleCloudHandler:
+class _GoogleCloudHandlerBase:
     """
-    Main client for Google Cloud Utilities with Lazy Initialization.
-    """
-    _instance = None
-    _lock = threading.Lock()
+    Shared lazy-loading implementation for the Google Cloud client.
 
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super(GoogleCloudHandler, cls).__new__(cls)
-                    cls._instance._setup_lazy_loading(**kwargs)
-        elif kwargs:
-            # Merge new kwargs into existing instance for handlers not yet initialized.
-            # Already-live handlers are unaffected — their instance is already cached.
-            cls._instance._init_kwargs.update(kwargs)
-        return cls._instance
+    This base class holds all of the lazy-initialized service handlers. It is
+    not a singleton on its own — construction always produces a fresh instance.
+    The public variants are :class:`GoogleCloudHandler` (singleton, the default)
+    and :class:`GoogleCloudHandlerNonSingleton` (a new instance per call).
+    """
+
+    # Whether the lazily-built service handlers should themselves be
+    # process-wide singletons. The non-singleton client overrides this to
+    # False so each client owns fresh, independently-credentialed handlers
+    # instead of sharing the global handler singletons.
+    _handler_singleton = True
+
+    def __init__(self, **kwargs):
+        self._setup_lazy_loading(**kwargs)
 
     def _setup_lazy_loading(self, **kwargs):
         """Store config and prepare locks for lazy initialization."""
@@ -77,7 +77,8 @@ class GoogleCloudHandler:
                     logger.info("Lazy loading SecretManagerHandler")
                     try:
                         self._secret_manager_handler = SecretManagerHandler(
-                            serviceAccountJson=self._init_kwargs.get("secretManagerServiceAccount")
+                            serviceAccountJson=self._init_kwargs.get("secretManagerServiceAccount"),
+                            singleton=self._handler_singleton,
                         )
                         logger.info("SecretManagerHandler lazy loaded successfully")
                     except Exception as e:
@@ -99,7 +100,7 @@ class GoogleCloudHandler:
                             logger.info("CloudStorageHandler: fetching credential from Secret Manager (cloud-storage-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("cloud-storage-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._cloud_storage_handler = CloudStorageHandler(serviceAccountJson=creds)
+                        self._cloud_storage_handler = CloudStorageHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("CloudStorageHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load CloudStorageHandler: {e}")
@@ -120,7 +121,7 @@ class GoogleCloudHandler:
                             logger.info("BigQueryHandler: fetching credential from Secret Manager (bigquery-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("bigquery-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._big_query_handler = BigQueryHandler(serviceAccountJson=creds)
+                        self._big_query_handler = BigQueryHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("BigQueryHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load BigQueryHandler: {e}")
@@ -162,7 +163,7 @@ class GoogleCloudHandler:
                             logger.info("DatastoreHandler: fetching credential from Secret Manager (firestore-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("firestore-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._datastore_handler = DatastoreHandler(serviceAccountJson=creds)
+                        self._datastore_handler = DatastoreHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("DatastoreHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load DatastoreHandler: {e}")
@@ -183,7 +184,7 @@ class GoogleCloudHandler:
                             logger.info("PubSubHandler: fetching credential from Secret Manager (pubsub-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("pubsub-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._pub_sub_handler = PubSubHandler(serviceAccountJson=creds)
+                        self._pub_sub_handler = PubSubHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("PubSubHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load PubSubHandler: {e}")
@@ -204,7 +205,7 @@ class GoogleCloudHandler:
                             logger.info("CloudTasksHandler: fetching credential from Secret Manager (cloud-tasks-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("cloud-tasks-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._cloud_tasks_handler = CloudTasksHandler(serviceAccountJson=creds)
+                        self._cloud_tasks_handler = CloudTasksHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("CloudTasksHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load CloudTasksHandler: {e}")
@@ -232,7 +233,7 @@ class GoogleCloudHandler:
                     creds = self._init_kwargs.get("genAIServiceAccountJson") or \
                             self.secretManagerHandler.get_secret("genai-user-service-account")
                     creds = json.loads(creds) if isinstance(creds, str) else creds
-                    self._gen_ai_handler = GenAIHandler(serviceAccountJson=creds)
+                    self._gen_ai_handler = GenAIHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
         return self._gen_ai_handler
 
     @property
@@ -277,9 +278,70 @@ class GoogleCloudHandler:
                             logger.info("FirestoreHandler: fetching credential from Secret Manager (firestore-admin-service-account)")
                             creds = self.secretManagerHandler.get_secret("firestore-admin-service-account")
                         creds = json.loads(creds) if isinstance(creds, str) else creds
-                        self._firestore_handler = FirestoreHandler(serviceAccountJson=creds)
+                        self._firestore_handler = FirestoreHandler(serviceAccountJson=creds, singleton=self._handler_singleton)
                         logger.info("FirestoreHandler lazy loaded successfully")
                     except Exception as e:
                         logger.exception(f"Failed to lazy load FirestoreHandler: {e}")
                         raise
-        return self._firestore_handler 
+        return self._firestore_handler
+
+
+class GoogleCloudHandlerNonSingleton(_GoogleCloudHandlerBase):
+    """
+    Non-singleton variant of the Google Cloud client.
+
+    Every construction returns a fresh, independent instance with its own
+    lazily-loaded handlers and configuration. Use this when you need multiple
+    clients side by side (e.g. different credentials per instance) or want
+    isolation between callers. For the shared, process-wide default, use
+    :class:`GoogleCloudHandler`.
+
+    The underlying service handlers are also built in non-singleton mode, so a
+    fresh instance owns its own handlers (with their own credentials) rather
+    than sharing the process-wide handler singletons.
+    """
+    _handler_singleton = False
+
+
+class GoogleCloudHandler(_GoogleCloudHandlerBase):
+    """
+    Singleton variant of the Google Cloud client (the package default).
+
+    The first construction sets up lazy loading; every later construction
+    returns the same instance. Kwargs passed on a later construction are merged
+    into the stored config for handlers that have not been initialized yet —
+    already-live handlers keep their existing instance.
+
+    Need a fresh, independent client instead? Use
+    :class:`GoogleCloudHandlerNonSingleton`.
+    """
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super(GoogleCloudHandler, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, **kwargs):
+        with self._lock:
+            if getattr(self, "_initialized", False):
+                # Merge new kwargs into existing instance for handlers not yet
+                # initialized. Already-live handlers are unaffected — their
+                # instance is already cached.
+                if kwargs:
+                    self._init_kwargs.update(kwargs)
+                return
+            super().__init__(**kwargs)
+            self._initialized = True
+
+    @classmethod
+    def reset_instance(cls):
+        """Drop the cached singleton so the next construction starts fresh.
+
+        Mainly useful for tests or when re-configuring the process-wide client.
+        """
+        with cls._lock:
+            cls._instance = None

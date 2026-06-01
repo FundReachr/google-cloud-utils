@@ -23,7 +23,13 @@ class BigQueryHandler:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, singleton: bool = True, **kwargs):
+        if not singleton:
+            # Non-singleton mode: build a fresh, isolated instance that does
+            # not touch (or read from) the process-wide cached instance.
+            instance = super(BigQueryHandler, cls).__new__(cls)
+            instance._initialize(*args, **kwargs)
+            return instance
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
