@@ -79,6 +79,8 @@ assert gcp_a.bigQueryHandler is not gcp_b.bigQueryHandler  # isolated handlers
 >
 > Each service handler (e.g. `BigQueryHandler`) is itself a singleton by default and accepts a `singleton=False` keyword to construct a fresh, isolated instance directly. The non-singleton client passes this through automatically.
 
+> **Lazy imports:** Handler modules are imported only on first access, so `import google_cloud_utils` (and importing `GoogleCloudHandler`) works without every Google Cloud client library being installed — you only pay the import cost (and need the dependency) for the handlers you actually touch. For example, a Datastore-only consumer never imports `google-cloud-run`, `gspread` or `google-genai`.
+
 ### BigQuery Example
 
 ```python
