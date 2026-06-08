@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "google_cloud_utils"
-version = "0.3.1"
+version = "0.3.2"
 description = "A wrapper for Google Cloud services handlers"
 readme = "README.md"
 authors = [
@@ -19,16 +19,24 @@ dependencies = [
     "google-cloud-tasks",
     "google-cloud-scheduler",
     "google-cloud-datastore",
-    "google-cloud-aiplatform",
-    "google-cloud-resource-manager",
     "google-cloud-firestore",
+    "google-cloud-resource-manager",
+    "google-cloud-aiplatform",
     "google-cloud-pubsub",
+    "google-cloud-run",
+    "google-cloud-core",
+    "google-auth",
+    "google-genai",
+    "gspread",
+    "protobuf",
+    "requests",
+    "tenacity",
     "pandas",
-    "python-dotenv",
-    "genson",
     "openpyxl",
+    "numpy",
     "regex",
-    "numpy"
+    "genson",
+    "python-dotenv",
 ]
 
 [project.urls]

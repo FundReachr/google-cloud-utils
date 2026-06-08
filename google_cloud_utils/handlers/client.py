@@ -1,20 +1,14 @@
-from .gcs import CloudStorageHandler
-from .secrets import SecretManagerHandler
-from .bigquery import BigQueryHandler
-from .pubsub import PubSubHandler
-from .tasks import CloudTasksHandler
-from .datastore import DatastoreHandler
-from .firestore import FirestoreHandler
-from .cloud_scheduler import CloudSchedulerHandler
-from .cloud_function import CloudFunctionHandler
-from .genai import GenAIHandler
-from .sheets import SheetsHandler
-from .cloud_run import CloudRunJobHandler
 import threading
 import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+# NOTE: the individual service handlers are imported lazily inside each property
+# below (not at module-import time). This keeps importing this module — and
+# therefore ``google_cloud_utils`` — cheap and free of every Google Cloud client
+# library: a consumer only needs the dependencies for the handlers it actually
+# touches (e.g. a Datastore-only user never imports ``google-cloud-run``).
 
 class _GoogleCloudHandlerBase:
     """
@@ -74,6 +68,7 @@ class _GoogleCloudHandlerBase:
         if self._secret_manager_handler is None:
             with self._handler_locks["secret"]:
                 if self._secret_manager_handler is None:
+                    from .secrets import SecretManagerHandler
                     logger.info("Lazy loading SecretManagerHandler")
                     try:
                         self._secret_manager_handler = SecretManagerHandler(
@@ -91,6 +86,7 @@ class _GoogleCloudHandlerBase:
         if self._cloud_storage_handler is None:
             with self._handler_locks["storage"]:
                 if self._cloud_storage_handler is None:
+                    from .gcs import CloudStorageHandler
                     logger.info("Lazy loading CloudStorageHandler")
                     try:
                         if self._init_kwargs.get("cloudStorageServiceAccountJson"):
@@ -112,6 +108,7 @@ class _GoogleCloudHandlerBase:
         if self._big_query_handler is None:
             with self._handler_locks["bigquery"]:
                 if self._big_query_handler is None:
+                    from .bigquery import BigQueryHandler
                     logger.info("Lazy loading BigQueryHandler")
                     try:
                         if self._init_kwargs.get("bigQueryServiceAccountJson"):
@@ -133,6 +130,7 @@ class _GoogleCloudHandlerBase:
         if self._cloud_scheduler_handler is None:
             with self._handler_locks["scheduler"]:
                 if self._cloud_scheduler_handler is None:
+                    from .cloud_scheduler import CloudSchedulerHandler
                     logger.info("Lazy loading CloudSchedulerHandler")
                     try:
                         if self._init_kwargs.get("cloudSchedulerServiceAccountJson"):
@@ -154,6 +152,7 @@ class _GoogleCloudHandlerBase:
         if self._datastore_handler is None:
             with self._handler_locks["datastore"]:
                 if self._datastore_handler is None:
+                    from .datastore import DatastoreHandler
                     logger.info("Lazy loading DatastoreHandler")
                     try:
                         if self._init_kwargs.get("datastoreServiceAccountJson"):
@@ -175,6 +174,7 @@ class _GoogleCloudHandlerBase:
         if self._pub_sub_handler is None:
             with self._handler_locks["pubsub"]:
                 if self._pub_sub_handler is None:
+                    from .pubsub import PubSubHandler
                     logger.info("Lazy loading PubSubHandler")
                     try:
                         if self._init_kwargs.get("pubSubServiceAccountJson"):
@@ -196,6 +196,7 @@ class _GoogleCloudHandlerBase:
         if self._cloud_tasks_handler is None:
             with self._handler_locks["tasks"]:
                 if self._cloud_tasks_handler is None:
+                    from .tasks import CloudTasksHandler
                     logger.info("Lazy loading CloudTasksHandler")
                     try:
                         if self._init_kwargs.get("cloudTasksServiceAccountJson"):
@@ -217,6 +218,7 @@ class _GoogleCloudHandlerBase:
         if self._cloud_function_handler is None:
             with self._handler_locks["functions"]:
                 if self._cloud_function_handler is None:
+                    from .cloud_function import CloudFunctionHandler
                     print("Lazy Initializing CloudFunctionHandler...")
                     creds = self._init_kwargs.get("cloudFunctionServiceAccountJson") or \
                             self.secretManagerHandler.get_secret("cloud-function-admin-service-account")
@@ -229,6 +231,7 @@ class _GoogleCloudHandlerBase:
         if self._gen_ai_handler is None:
             with self._handler_locks["genai"]:
                 if self._gen_ai_handler is None:
+                    from .genai import GenAIHandler
                     print("Lazy Initializing GenAIHandler...")
                     creds = self._init_kwargs.get("genAIServiceAccountJson") or \
                             self.secretManagerHandler.get_secret("genai-user-service-account")
@@ -241,6 +244,7 @@ class _GoogleCloudHandlerBase:
         if self._cloud_run_job_handler is None:
             with self._handler_locks["cloud_run"]:
                 if self._cloud_run_job_handler is None:
+                    from .cloud_run import CloudRunJobHandler
                     print("Lazy Initializing CloudRunJobHandler...")
                     creds =	self._init_kwargs.get("cloudRunServiceAccountJson") or \
                             self.secretManagerHandler.get_secret("app-builder-service-account")
@@ -254,6 +258,7 @@ class _GoogleCloudHandlerBase:
         if self._sheets_handler is None:
             with self._handler_locks["sheets"]:
                 if self._sheets_handler is None:
+                    from .sheets import SheetsHandler
                     print("Lazy Initializing SheetsHandler...")
                     creds = self._init_kwargs.get("sheetsServiceAccountJson") or \
                             self.secretManagerHandler.get_secret("sheets-admin-service-account")
@@ -269,6 +274,7 @@ class _GoogleCloudHandlerBase:
         if self._firestore_handler is None:
             with self._handler_locks["firestore"]:
                 if self._firestore_handler is None:
+                    from .firestore import FirestoreHandler
                     logger.info("Lazy loading FirestoreHandler")
                     try:
                         if self._init_kwargs.get("firestoreServiceAccountJson"):

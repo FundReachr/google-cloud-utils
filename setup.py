@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="google_cloud_utils",
-    version="0.3.1",
+    version="0.3.2",
     packages=find_packages(),
     install_requires=[
         "google-cloud-bigquery",
@@ -15,11 +15,20 @@ setup(
         "google-cloud-resource-manager",
         "google-cloud-aiplatform",
         "google-cloud-pubsub",
+        "google-cloud-run",
+        "google-cloud-core",
+        "google-auth",
+        "google-genai",
+        "gspread",
+        "protobuf",
+        "requests",
+        "tenacity",
         "pandas",
-        "python-dotenv",
-        "genson",
+        "openpyxl",
+        "numpy",
         "regex",
-        "numpy"
+        "genson",
+        "python-dotenv",
     ],
     author="DataGem Consulting",
     description="A wrapper for Google Cloud services handlers",
